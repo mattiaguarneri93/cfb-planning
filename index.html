@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff6b35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CFB Planning">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ff6b35'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white'>&#x1F94A;</text></svg>">
+<title>CrossFit Brembo — Planning</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0f1419;--panel:#1a2028;--panel2:#222a35;--border:#2d3742;--text:#e8eef5;--muted:#8a99ad;--accent:#ff6b35;--accent2:#ffb627;--success:#3ecf8e;--danger:#ef4444;--warn:#f59e0b;--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+#sandboxBanner{display:none;background:var(--warn);color:#1a1a1a;padding:.7rem 1rem;font-size:.85rem;position:relative;font-weight:600}
+#sandboxBanner .close{position:absolute;top:.4rem;right:.5rem;background:transparent;border:1px solid #1a1a1a;color:#1a1a1a;width:26px;height:26px;border-radius:6px;cursor:pointer;font-weight:700}
+header{background:linear-gradient(135deg,#1a2028,#0f1419);border-bottom:3px solid var(--accent);padding:1rem 1.5rem;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.h-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;max-width:1600px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:.75rem;font-weight:800;font-size:1.2rem}
+.logo-icon{width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.logo small{display:block;font-size:.65rem;color:var(--muted);font-weight:500}
+.top-nav{display:flex;gap:.4rem;flex-wrap:wrap}
+.nav-btn{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:.55rem 1rem;border-radius:10px;cursor:pointer;font-weight:600;font-size:.88rem;font-family:inherit}
+.nav-btn:hover{background:var(--accent);border-color:var(--accent)}
+.nav-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.sync-header{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .7rem;background:var(--panel2);border-radius:20px;font-size:.75rem;font-weight:600;border:1px solid var(--border)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sync-dot.syncing{background:var(--warn);animation:p 1s infinite}
+.sync-dot.ok{background:var(--success)}
+.sync-dot.error{background:var(--danger)}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+main{max-width:1600px;margin:0 auto;padding:1.5rem}
+.view{display:none}
+.view.active{display:block}
+.toolbar{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between}
+.tg{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.btn{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:.5rem .9rem;border-radius:10px;cursor:pointer;font-weight:600;font-size:.88rem;font-family:inherit;display:inline-flex;align-items:center;gap:.4rem}
+.btn:hover{background:var(--accent);border-color:var(--accent)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn-sm{padding:.35rem .7rem;font-size:.8rem}
+.btn-full{width:100%;justify-content:center}
+select,input[type=text],input[type=time],input[type=date],input[type=color],input[type=url]{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:.55rem .7rem;border-radius:10px;font-size:.9rem;font-family:inherit}
+select:focus,input:focus{outline:none;border-color:var(--accent)}
+.week-label{font-weight:700;color:var(--accent2);min-width:220px;text-align:center}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1rem}
+.kpi{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:1rem}
+.kpi.ok{border-left-color:var(--success)}
+.kpi.warn{border-left-color:var(--warn)}
+.kpi-lbl{color:var(--muted);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-size:1.8rem;font-weight:800;margin-top:.3rem}
+.week-grid{display:grid;grid-template-columns:80px repeat(7,1fr);gap:5px;background:var(--panel);padding:1rem;border-radius:10px;border:1px solid var(--border)}
+.day-h{background:var(--panel2);padding:.6rem .4rem;text-align:center;border-radius:8px;font-weight:700;font-size:.85rem}
+.day-h.today{background:var(--accent);color:#fff}
+.day-h .dn{font-size:1.3rem;display:block;margin-top:.2rem}
+.time-c{font-weight:700;text-align:right;padding:.3rem .5rem;font-size:.85rem;color:var(--muted);display:flex;align-items:center;justify-content:flex-end}
+.slot{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.4rem .5rem;min-height:52px;cursor:pointer;font-size:.75rem;display:flex;flex-direction:column;justify-content:center;word-break:break-word;transition:transform .15s}
+.slot:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.slot.empty{opacity:.5;background:repeating-linear-gradient(45deg,var(--panel2),var(--panel2) 6px,#1d242e 6px,#1d242e 12px)}
+.slot.uncov{border-color:var(--warn)}
+.slot.dim{opacity:.25}
+.st{font-weight:700;font-size:.78rem;color:var(--accent2)}
+.sc{font-size:.72rem;font-weight:600}
+.sb{font-size:.72rem;font-weight:700;margin-top:2px;padding:1px 6px;border-radius:4px;display:inline-block;align-self:flex-start;color:#fff}
+.se{font-size:.7rem;color:var(--muted);font-style:italic}
+table.data{width:100%;border-collapse:collapse;background:var(--panel);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+table.data th,table.data td{padding:.6rem .8rem;text-align:center;border-bottom:1px solid var(--border);font-size:.85rem}
+table.data th{background:var(--panel2);font-weight:700;color:var(--accent2);text-transform:uppercase;font-size:.75rem}
+table.data td:first-child{text-align:left;font-weight:600}
+table.data tr.tot td{background:var(--panel2);font-weight:800}
+table.data tr.unc td{color:var(--warn);font-weight:700}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin-bottom:1rem}
+.card h2{color:var(--accent2);margin-bottom:.9rem;font-size:1rem;text-transform:uppercase;letter-spacing:.5px}
+.row{display:flex;gap:.5rem;align-items:center;background:var(--panel2);padding:.5rem;border-radius:8px;margin-bottom:.4rem}
+.row input[type=text]{flex:1}
+.row input[type=color]{width:44px;height:38px;padding:0;border-radius:6px;flex-shrink:0}
+.row .btn{flex-shrink:0}
+.tpl-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.5rem;margin-top:.6rem}
+.tpl-day{background:var(--panel2);border-radius:8px;padding:.5rem;min-height:120px}
+.tpl-day h4{color:var(--accent);font-size:.8rem;text-align:center;margin-bottom:.4rem}
+.tpl-s{background:var(--bg);border-radius:5px;padding:.3rem .4rem;margin-bottom:.3rem;font-size:.72rem;display:flex;justify-content:space-between;align-items:center}
+.tpl-s .x{cursor:pointer;color:var(--danger);font-weight:bold;padding:0 .3rem}
+.tpl-add{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.4rem}
+.tpl-add input,.tpl-add select{padding:.25rem;font-size:.72rem;flex:1;min-width:50px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:1.4rem;max-width:460px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{color:var(--accent2);margin-bottom:1rem}
+.field{margin-bottom:.7rem}
+.field label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;font-weight:600}
+.field input,.field select{width:100%}
+.m-acts{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--success);color:#fff;padding:.85rem 1.2rem;border-radius:10px;z-index:2000;font-weight:600;transform:translateY(150%);transition:transform .3s;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.toast.show{transform:translateY(0)}
+.toast.err{background:var(--danger)}
+.chips{display:flex;gap:.4rem;overflow-x:auto;padding:.2rem .1rem .5rem;margin-bottom:.6rem;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{background:var(--panel2);border:1px solid var(--border);padding:.4rem .85rem;border-radius:20px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.slot-card{background:var(--panel);border:1px solid var(--border);border-left:5px solid var(--border);border-radius:12px;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:.7rem;min-height:66px;cursor:pointer;margin-bottom:.5rem}
+.slot-card:active{transform:scale(.98)}
+.slot-card.uncov{border-left-color:var(--warn);background:linear-gradient(90deg,rgba(245,158,11,.08),var(--panel) 50%)}
+.slot-card.dim{opacity:.3}
+.s-info{flex:1;min-width:0}
+.s-time{font-weight:800;font-size:1.05rem;color:var(--accent2)}
+.s-class{font-size:.85rem;margin-top:.15rem}
+.s-badge{color:#fff;padding:.35rem .7rem;border-radius:20px;font-size:.78rem;font-weight:700;white-space:nowrap;flex-shrink:0}
+.s-badge.u{background:transparent;color:var(--warn);border:1px dashed var(--warn)}
+.day-nav-m{display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.5rem;margin-bottom:.8rem;gap:.4rem}
+.day-nav-m .arr{width:44px;height:44px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--text);cursor:pointer}
+.day-nav-m .cur{flex:1;text-align:center}
+.day-nav-m .cur .dname{font-weight:800;font-size:1.05rem}
+.day-nav-m .cur .ddate{color:var(--muted);font-size:.8rem;margin-top:.1rem}
+.day-nav-m .cur.today .dname{color:var(--accent)}
+.acc-day{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:.5rem;overflow:hidden}
+.acc-head{padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:700}
+.acc-head.today{color:var(--accent)}
+.acc-badge{background:var(--panel2);color:var(--muted);padding:.15rem .6rem;border-radius:12px;font-size:.72rem;font-weight:600}
+.acc-badge.hasunc{background:rgba(245,158,11,.2);color:var(--warn)}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.acc-body.open{max-height:3000px}
+.acc-inner{padding:0 .6rem .6rem}
+.acc-arrow{color:var(--muted);transition:transform .25s}
+.acc-head.open .acc-arrow{transform:rotate(180deg)}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-state .em{font-size:3rem;margin-bottom:.5rem;opacity:.5}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(26,32,40,.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);grid-template-columns:repeat(4,1fr);padding:.4rem .3rem calc(.4rem + var(--sb));z-index:60}
+.bnav{background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;padding:.4rem;gap:.15rem;cursor:pointer;font-family:inherit;border-radius:8px;font-size:.6rem;font-weight:700;text-transform:uppercase}
+.bnav .bi{font-size:1.3rem}
+.bnav.active{color:var(--accent)}
+.fab{display:none;position:fixed;bottom:calc(85px + var(--sb));right:1rem;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:1.8rem;box-shadow:0 6px 20px rgba(255,107,53,.4);cursor:pointer;z-index:55;align-items:center;justify-content:center}
+.fab:active{transform:scale(.92)}
+.sync-instr{background:var(--panel2);border-radius:8px;padding:.9rem;font-size:.85rem;line-height:1.6;margin-top:.6rem}
+.sync-instr ol{margin-left:1.2rem;margin-top:.4rem}
+.sync-instr li{margin-bottom:.4rem}
+.sync-instr pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.7rem;overflow-x:auto;font-size:.75rem;margin-top:.4rem;font-family:monospace;color:var(--accent2);white-space:pre-wrap}
+.sync-instr code{color:var(--accent);background:var(--bg);padding:.1rem .35rem;border-radius:4px}
+.tog-i{cursor:pointer;color:var(--accent);text-decoration:underline;font-size:.85rem;font-weight:600}
+/* MOBILE */
+.mobile-only{display:none}
+@media (max-width:900px){
+  header{padding:.8rem 1rem}
+  .top-nav{display:none}
+  main{padding:1rem}
+  body{padding-bottom:calc(75px + var(--sb))}
+  .mobile-only{display:block}
+  .desktop-only{display:none!important}
+  .bottom-nav{display:grid}
+  .fab{display:flex}
+  .week-grid{display:none}
+  .tpl-grid{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(3,1fr);gap:.5rem}
+  .kpi{padding:.7rem}
+  .kpi-val{font-size:1.3rem}
+  .kpi-lbl{font-size:.6rem}
+  table.data{font-size:.75rem}
+  table.data th,table.data td{padding:.4rem}
+}
+@media (min-width:901px){.mob-only{display:none}}
+@media print{
+  header,.top-nav,.toolbar,.no-print,.bottom-nav,.fab,#sandboxBanner{display:none!important}
+  body{background:white;color:black}
+  .slot{border:1px solid #999;color:black;background:white!important}
+  .week-grid{display:grid!important;background:white;border:1px solid #333}
+  .day-h,.time-c,.st,.sc,.sb{color:black!important}
+}
+</style>
+</head>
+<body>
+
+<div id="sandboxBanner">
+  <button class="close" id="closeBanner">✕</button>
+  <strong>⚠ Modalità preview</strong> — I dati non verranno salvati. Scarica il file e aprilo dal PC/telefono per usarlo davvero.
+</div>
+
+<header>
+  <div class="h-inner">
+    <div class="logo">
+      <div class="logo-icon">🥊</div>
+      <div>CrossFit Brembo<small>Planning Lezioni</small></div>
+    </div>
+    <div class="tg" style="gap:.6rem">
+      <div class="sync-header" id="syncHeader" title="Stato sincronizzazione">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncHeaderTxt">Locale</span>
+      </div>
+      <nav class="top-nav">
+        <button class="nav-btn active" data-view="week">📅 Settimana</button>
+        <button class="nav-btn" data-view="dashboard">📊 Dashboard</button>
+        <button class="nav-btn" data-view="admin">⚙️ Admin</button>
+        <button class="nav-btn no-print" id="btnPrint">🖨️ Stampa</button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- MOBILE: OGGI -->
+<section id="view-today" class="view mob-only">
+  <div class="day-nav-m">
+    <button class="arr" id="mDayPrev">‹</button>
+    <div class="cur" id="mDayCur"><div class="dname">—</div><div class="ddate">—</div></div>
+    <button class="arr" id="mDayNext">›</button>
+  </div>
+  <div class="chips" id="mChipsToday"></div>
+  <div id="mTodayList"></div>
+</section>
+
+<!-- WEEK VIEW -->
+<section id="view-week" class="view active">
+  <div class="toolbar">
+    <div class="tg">
+      <button class="btn" id="btnPrev">◀</button>
+      <button class="btn" id="btnToday">Oggi</button>
+      <button class="btn" id="btnNext">▶</button>
+      <input type="date" id="datePicker">
+      <span class="week-label" id="weekLabel">—</span>
+    </div>
+    <div class="tg">
+      <select id="coachFilter"><option value="">Tutti i coach</option></select>
+      <button class="btn btn-sm" id="btnAddExtra">+ Slot</button>
+    </div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-lbl">Lezioni</div><div class="kpi-val" id="kTot">0</div></div>
+    <div class="kpi ok"><div class="kpi-lbl">Coperte</div><div class="kpi-val" id="kCov">0</div></div>
+    <div class="kpi warn"><div class="kpi-lbl">Scoperte</div><div class="kpi-val" id="kUnc">0</div></div>
+  </div>
+  <div class="chips mobile-only" id="mChipsWeek"></div>
+  <div class="week-grid desktop-only" id="weekGrid"></div>
+  <div class="mobile-only" id="mWeekAcc"></div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="view-dashboard" class="view">
+  <div class="toolbar">
+    <div class="tg">
+      <label style="color:var(--muted);font-size:.85rem">Anno:</label>
+      <select id="dashYear"></select>
+    </div>
+    <div class="tg">
+      <button class="btn" id="btnExportXlsx">📥 Excel</button>
+      <button class="btn" id="btnExportJson">💾 JSON</button>
+      <button class="btn" id="btnImportTrigger">📂 Importa</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </div>
+  <h3 style="margin-bottom:.8rem;color:var(--accent2)">📊 Conteggio lezioni per coach e mese</h3>
+  <div style="overflow-x:auto"><table class="data" id="dashTable"></table></div>
+</section>
+
+<!-- ADMIN -->
+<section id="view-admin" class="view">
+  <div class="card">
+    <h2>👥 Coach</h2>
+    <div id="coachList"></div>
+    <button class="btn btn-primary btn-sm" id="btnAddCoach">+ Aggiungi coach</button>
+  </div>
+
+  <div class="card">
+    <h2>🏋️ Tipi di classe</h2>
+    <div id="classList"></div>
+    <button class="btn btn-primary btn-sm" id="btnAddClass">+ Aggiungi classe</button>
+  </div>
+
+  <div class="card">
+    <h2>📋 Template settimanale</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:.6rem">Slot ricorrenti per ogni giorno.</p>
+    <div class="tpl-grid" id="tplGrid"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔄 Sincronizzazione Google Sheets</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:.7rem">Sincronizza i dati tra più dispositivi (telefono + PC) usando un Google Sheet come backend gratuito.</p>
+    <div class="field"><label>URL Web App</label><input type="url" id="gasUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div style="margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem">
+      <input type="checkbox" id="autoSync" style="width:auto">
+      <label for="autoSync" style="cursor:pointer;font-size:.9rem">Sincronizzazione automatica (pull all'avvio + push dopo modifiche)</label>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem">
+      <button class="btn btn-primary btn-sm" id="btnPull">⬇ Pull</button>
+      <button class="btn btn-primary btn-sm" id="btnPush">⬆ Push</button>
+      <button class="btn btn-sm" id="btnTestSync">🔍 Test</button>
+      <button class="btn btn-sm" id="btnSaveSyncCfg">💾 Salva</button>
+    </div>
+    <div style="font-size:.8rem;color:var(--muted)" id="lastSyncTxt">Mai sincronizzato</div>
+    <div style="margin-top:.7rem"><span class="tog-i" id="togInstr">📖 Come configurarla (istruzioni)</span></div>
+    <div class="sync-instr" id="syncInstr" style="display:none">
+      <strong>Setup in 5 minuti (una tantum):</strong>
+      <ol>
+        <li>Vai su <code>sheets.google.com</code> → crea un nuovo foglio vuoto</li>
+        <li>Menu <code>Estensioni → Apps Script</code></li>
+        <li>Cancella il codice presente e incolla:<pre id="gasCode">function doGet(e){
+  var s=SpreadsheetApp.getActiveSheet();
+  return ContentService.createTextOutput(s.getRange('A1').getValue()||'{}')
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function doPost(e){
+  SpreadsheetApp.getActiveSheet().getRange('A1').setValue(e.postData.contents);
+  return ContentService.createTextOutput('OK');
+}</pre>
+          <button class="btn btn-sm" id="btnCopyCode" style="margin-top:.4rem">📋 Copia codice</button>
+        </li>
+        <li>Salva (💾), poi <code>Distribuisci → Nuova distribuzione</code></li>
+        <li>Tipo: <strong>App web</strong>. Esegui come: <code>Me</code>. Chi ha accesso: <code>Chiunque</code></li>
+        <li>Autorizza, copia l'<strong>URL</strong> che finisce con <code>/exec</code></li>
+        <li>Incollalo qui sopra, spunta la sync automatica, clicca <strong>Salva</strong> poi <strong>Push</strong></li>
+        <li>Sugli altri dispositivi (telefono, altro PC): apri il file, incolla lo stesso URL, clicca <strong>Pull</strong> → sarai sincronizzato ✅</li>
+      </ol>
+      <em style="color:var(--muted);font-size:.78rem">Chiunque abbia l'URL può leggere/scrivere. Non condividerlo pubblicamente.</em>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⚠️ Zona pericolosa</h2>
+    <button class="btn btn-danger btn-full" id="btnReset">🗑️ Reset totale</button>
+  </div>
+</section>
+
+</main>
+
+<button class="fab" id="btnFab" title="Aggiungi">+</button>
+
+<nav class="bottom-nav">
+  <button class="bnav active" data-mview="today"><span class="bi">📆</span>Oggi</button>
+  <button class="bnav" data-mview="week"><span class="bi">📅</span>Sett</button>
+  <button class="bnav" data-mview="dashboard"><span class="bi">📊</span>Dash</button>
+  <button class="bnav" data-mview="admin"><span class="bi">⚙️</span>Admin</button>
+</nav>
+
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3>Modifica lezione</h3>
+    <div class="field"><label>Data</label><input type="text" id="eDate" readonly></div>
+    <div class="field"><label>Orario</label><input type="time" id="eTime"></div>
+    <div class="field"><label>Classe</label><select id="eClass"></select></div>
+    <div class="field"><label>Coach</label><select id="eCoach"></select></div>
+    <div class="m-acts">
+      <button class="btn btn-danger" id="eDel" style="display:none">🗑️ Elimina</button>
+      <button class="btn" id="eCancel">Annulla</button>
+      <button class="btn btn-primary" id="eSave">💾 Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h3>+ Aggiungi slot extra</h3>
+    <div class="field"><label>Giorno</label><select id="aDay"></select></div>
+    <div class="field"><label>Orario</label><input type="time" id="aTime" value="18:30"></div>
+    <div class="field"><label>Classe</label><select id="aClass"></select></div>
+    <div class="field"><label>Coach</label><select id="aCoach"></select></div>
+    <div class="m-acts">
+      <button class="btn" id="aCancel">Annulla</button>
+      <button class="btn btn-primary" id="aSave">+ Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function $(id){return document.getElementById(id)}
+
+const DEFAULT_COACHES=[{name:'Robi',color:'#e63946'},{name:'Jas',color:'#06d6a0'},{name:'Mattia',color:'#118ab2'},{name:'Chiara',color:'#f4a261'}];
+const DEFAULT_CLASSES=['CrossFit','Aerobic','Hyrox','Weightlifting','Pilates','Stretching&Mobility','Mobility&Core'];
+const DAYS=['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+const DAYS_S=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+const MONTHS=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const MONTHS_F=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const DEFAULT_TEMPLATE={
+  0:[{time:'06:30',cls:'CrossFit'},{time:'17:30',cls:'CrossFit'},{time:'18:30',cls:'CrossFit'},{time:'19:30',cls:'CrossFit'}],
+  1:[{time:'06:30',cls:'CrossFit'},{time:'09:15',cls:'CrossFit'},{time:'17:30',cls:'CrossFit'},{time:'18:30',cls:'CrossFit'},{time:'19:30',cls:'CrossFit'}],
+  2:[{time:'06:30',cls:'Aerobic'},{time:'17:00',cls:'CrossFit'},{time:'17:30',cls:'Mobility&Core'},{time:'18:00',cls:'CrossFit'},{time:'19:00',cls:'Weightlifting'},{time:'20:00',cls:'Stretching&Mobility'}],
+  3:[{time:'06:30',cls:'CrossFit'},{time:'17:30',cls:'CrossFit'},{time:'18:30',cls:'CrossFit'},{time:'19:30',cls:'CrossFit'}],
+  4:[{time:'06:30',cls:'CrossFit'},{time:'09:15',cls:'CrossFit'},{time:'12:30',cls:'Hyrox'},{time:'17:30',cls:'CrossFit'},{time:'18:30',cls:'CrossFit'},{time:'19:30',cls:'Aerobic'}],
+  5:[{time:'09:30',cls:'Weightlifting'},{time:'10:30',cls:'CrossFit'},{time:'11:30',cls:'Pilates'}],
+  6:[]
+};
+
+let STORAGE_OK=true,MEMORY_STORE=null;
+function checkStorage(){try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return true}catch(e){return false}}
+function loadData(){
+  STORAGE_OK=checkStorage();
+  let raw=null;
+  if(STORAGE_OK){try{raw=localStorage.getItem('cfb_data')}catch(e){STORAGE_OK=false}}
+  else raw=MEMORY_STORE;
+  if(raw){try{const d=JSON.parse(raw);if(d&&d.coaches&&d.template)return d}catch(e){}}
+  return{coaches:JSON.parse(JSON.stringify(DEFAULT_COACHES)),classes:[...DEFAULT_CLASSES],template:JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)),assignments:{},extraSlots:{},deletedSlots:{}};
+}
+function saveDataLocal(){
+  const p=JSON.stringify(DATA);
+  if(STORAGE_OK){try{localStorage.setItem('cfb_data',p);return}catch(e){STORAGE_OK=false;showSandboxBanner()}}
+  MEMORY_STORE=p;
+}
+function saveData(){saveDataLocal(); schedulePush()}
+function showSandboxBanner(){const b=$('sandboxBanner');if(b)b.style.display='block'}
+
+function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());const dy=x.getDay();x.setDate(x.getDate()+(dy===0?-6:1-dy));return x}
+function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function fmtIT(d){return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`}
+function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x}
+function isToday(d){const t=new Date();return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear()}
+const SEP='|||';
+function slotKey(ds,t,c){return ds+SEP+t+SEP+c}
+
+function getSlotsForDate(date){
+  const ds=fmtDate(date);
+  const dow=(date.getDay()+6)%7;
+  const tpl=DATA.template[dow]||[];
+  const slots=[];
+  tpl.forEach(t=>{const k=slotKey(ds,t.time,t.cls);if(DATA.deletedSlots[k])return;slots.push({time:t.time,cls:t.cls,coach:DATA.assignments[k]||'',source:'template',dateStr:ds})});
+  (DATA.extraSlots[ds]||[]).forEach((e,i)=>{slots.push({time:e.time,cls:e.cls,coach:e.coach||'',source:'extra',dateStr:ds,extraIdx:i})});
+  slots.sort((a,b)=>a.time.localeCompare(b.time));
+  return slots;
+}
+
+let DATA,currentWeekStart,currentDay,editingSlot=null;
+
+/* ============ GOOGLE SYNC ============ */
+let GAS={url:'',auto:false,lastSync:0};
+try{const s=localStorage.getItem('cfb_sync_config');if(s)GAS=Object.assign(GAS,JSON.parse(s))}catch(e){}
+let pushTimer=null;
+
+function setSyncStatus(s,msg){
+  const dot=$('syncDot'),htxt=$('syncHeaderTxt');
+  if(dot){dot.className='sync-dot '+(s==='syncing'?'syncing':s==='ok'?'ok':s==='error'?'error':'')}
+  const label=msg||({idle:GAS.url?'Pronto':'Locale',syncing:'Sync...',ok:'Sync OK',error:'Errore'}[s]);
+  if(htxt) htxt.textContent=label;
+}
+function updateLastSyncTxt(){const el=$('lastSyncTxt');if(!el)return;el.textContent=GAS.lastSync?('Ultima sync: '+new Date(GAS.lastSync).toLocaleString('it-IT')):'Mai sincronizzato'}
+function saveSyncCfg(){
+  GAS.url=$('gasUrl').value.trim();
+  GAS.auto=$('autoSync').checked;
+  try{localStorage.setItem('cfb_sync_config',JSON.stringify(GAS))}catch(e){}
+  setSyncStatus('idle');
+  toast('Impostazioni salvate');
+}
+async function pullFromGoogle(silent){
+  if(!GAS.url){if(!silent)toast('Configura prima l\'URL',true);return false}
+  setSyncStatus('syncing');
+  try{
+    const r=await fetch(GAS.url,{method:'GET',redirect:'follow'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const txt=await r.text();
+    let d; try{d=JSON.parse(txt)}catch(e){throw new Error('JSON non valido')}
+    if(!d.coaches){if(!silent)toast('Foglio vuoto',true);setSyncStatus('idle');return false}
+    if(!silent && DATA && Object.keys(DATA.assignments||{}).length>0){
+      if(!confirm('Sovrascrivere i dati locali con quelli di Google?')){setSyncStatus('idle');return false}
+    }
+    DATA=d; saveDataLocal();
+    GAS.lastSync=Date.now();
+    try{localStorage.setItem('cfb_sync_config',JSON.stringify(GAS))}catch(e){}
+    setSyncStatus('ok'); updateLastSyncTxt();
+    renderAll();
+    if(!silent) toast('⬇ Dati caricati da Google');
+    return true;
+  }catch(e){setSyncStatus('error',e.message);if(!silent)toast('Errore pull: '+e.message,true);return false}
+}
+async function pushToGoogle(silent){
+  if(!GAS.url){if(!silent)toast('Configura prima l\'URL',true);return false}
+  setSyncStatus('syncing');
+  try{
+    const payload=JSON.stringify(Object.assign({},DATA,{_lastModified:Date.now()}));
+    const r=await fetch(GAS.url,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:payload});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    GAS.lastSync=Date.now();
+    try{localStorage.setItem('cfb_sync_config',JSON.stringify(GAS))}catch(e){}
+    setSyncStatus('ok'); updateLastSyncTxt();
+    if(!silent) toast('⬆ Salvato su Google');
+    return true;
+  }catch(e){setSyncStatus('error',e.message);if(!silent)toast('Errore push: '+e.message,true);return false}
+}
+async function testConnection(){
+  if(!GAS.url){toast('Inserisci l\'URL',true);return}
+  setSyncStatus('syncing');
+  try{const r=await fetch(GAS.url,{method:'GET',redirect:'follow'});if(!r.ok) throw new Error('HTTP '+r.status);await r.text();setSyncStatus('ok','OK');toast('✓ Connessione OK')}
+  catch(e){setSyncStatus('error',e.message);toast('✗ '+e.message,true)}
+}
+function schedulePush(){if(!GAS.url||!GAS.auto)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>pushToGoogle(true),2000)}
+
+/* ============ NAV ============ */
+function setView(name){
+  document.querySelectorAll('.nav-btn[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===name));
+  document.querySelectorAll('.bnav').forEach(x=>x.classList.toggle('active',x.dataset.mview===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const el=$('view-'+name); if(el) el.classList.add('active');
+  if(name==='dashboard') renderDashboard();
+  else if(name==='admin') renderAdmin();
+  else renderAll();
+}
+
+/* ============ WEEK VIEW (desktop) ============ */
+function navWeek(n){currentWeekStart=addDays(currentWeekStart,n*7);renderAll()}
+function goToday(){currentWeekStart=mondayOf(new Date());currentDay=new Date();renderAll()}
+function jumpDate(v){if(v){currentWeekStart=mondayOf(parseDate(v));renderAll()}}
+
+function renderWeek(){
+  const days=[...Array(7)].map((_,i)=>addDays(currentWeekStart,i));
+  $('weekLabel').textContent=`${fmtIT(days[0])} → ${fmtIT(days[6])}`;
+  $('datePicker').value=fmtDate(currentWeekStart);
+  const daySlots=days.map(d=>getSlotsForDate(d));
+  const allT=new Set(); daySlots.forEach(a=>a.forEach(s=>allT.add(s.time)));
+  const times=[...allT].sort();
+  const filter=$('coachFilter').value;
+  const grid=$('weekGrid'); grid.innerHTML='';
+  const corner=document.createElement('div'); corner.className='day-h'; corner.style.background='transparent'; grid.appendChild(corner);
+  days.forEach((d,i)=>{const h=document.createElement('div');h.className='day-h'+(isToday(d)?' today':'');h.innerHTML=`${esc(DAYS_S[i])}<span class="dn">${d.getDate()}</span>`;grid.appendChild(h)});
+  times.forEach(t=>{
+    const tc=document.createElement('div');tc.className='time-c';tc.textContent=t;grid.appendChild(tc);
+    days.forEach((d,i)=>{
+      const slot=daySlots[i].find(s=>s.time===t);
+      const cell=document.createElement('div');
+      if(!slot){cell.className='slot empty';cell.dataset.action='newslot';cell.dataset.date=fmtDate(d);cell.dataset.time=t;cell.innerHTML='<span class="se">—</span>'}
+      else{
+        const cObj=DATA.coaches.find(c=>c.name===slot.coach);
+        const uncov=!slot.coach?' uncov':'';
+        const dim=filter&&slot.coach!==filter?' dim':'';
+        cell.className='slot'+uncov+dim;
+        if(cObj){cell.style.background=cObj.color+'33';cell.style.borderColor=cObj.color}
+        cell.dataset.action='editslot';cell.dataset.date=slot.dateStr;cell.dataset.time=slot.time;cell.dataset.cls=slot.cls;cell.dataset.source=slot.source;
+        if(slot.extraIdx!=null) cell.dataset.idx=slot.extraIdx;
+        const badge=slot.coach?`<div class="sb" style="background:${esc(cObj.color)}">${esc(slot.coach)}</div>`:`<div class="se">⚠</div>`;
+        cell.innerHTML=`<div class="st">${esc(slot.time)}</div><div class="sc">${esc(slot.cls)}</div>${badge}`;
+      }
+      grid.appendChild(cell);
+    });
+  });
+  let tot=0,cov=0,unc=0; daySlots.forEach(a=>a.forEach(s=>{tot++;s.coach?cov++:unc++}));
+  $('kTot').textContent=tot; $('kCov').textContent=cov; $('kUnc').textContent=unc;
+}
+
+/* ============ MOBILE VIEWS ============ */
+function renderChips(elId){
+  const el=$(elId); if(!el) return;
+  const cur=$('coachFilter').value;
+  el.innerHTML='';
+  const all=document.createElement('div');
+  all.className='chip'+(cur===''?' active':'');
+  all.textContent='Tutti';
+  all.addEventListener('click',()=>{$('coachFilter').value='';renderAll()});
+  el.appendChild(all);
+  DATA.coaches.forEach(c=>{
+    const ch=document.createElement('div');
+    ch.className='chip'+(cur===c.name?' active':'');
+    ch.textContent=c.name;
+    ch.style.borderColor=c.color;
+    if(cur===c.name){ch.style.background=c.color;ch.style.color='#fff'}
+    ch.addEventListener('click',()=>{$('coachFilter').value=c.name;renderAll()});
+    el.appendChild(ch);
+  });
+}
+
+function slotCardHTML(s,cObj,dim){
+  const badge=s.coach?`<div class="s-badge" style="background:${esc(cObj.color)}">${esc(s.coach)}</div>`:`<div class="s-badge u">⚠ Scoperto</div>`;
+  return `<div class="s-info"><div class="s-time">${esc(s.time)}</div><div class="s-class">${esc(s.cls)}</div></div>${badge}`;
+}
+
+function renderMobileToday(){
+  const cur=$('mDayCur'); if(!cur) return;
+  cur.classList.toggle('today',isToday(currentDay));
+  cur.querySelector('.dname').textContent=DAYS[(currentDay.getDay()+6)%7];
+  cur.querySelector('.ddate').textContent=fmtIT(currentDay);
+  renderChips('mChipsToday');
+  const filter=$('coachFilter').value;
+  const slots=getSlotsForDate(currentDay);
+  const list=$('mTodayList'); list.innerHTML='';
+  if(slots.length===0){list.innerHTML='<div class="empty-state"><div class="em">💤</div>Nessuna lezione</div>';return}
+  slots.forEach(s=>{
+    const c=DATA.coaches.find(x=>x.name===s.coach);
+    const dim=filter&&s.coach!==filter?' dim':'';
+    const unc=!s.coach?' uncov':'';
+    const card=document.createElement('div');
+    card.className='slot-card'+unc+dim;
+    if(c) card.style.borderLeftColor=c.color;
+    card.innerHTML=slotCardHTML(s,c,dim);
+    card.dataset.action='editslot';card.dataset.date=s.dateStr;card.dataset.time=s.time;card.dataset.cls=s.cls;card.dataset.source=s.source;
+    if(s.extraIdx!=null) card.dataset.idx=s.extraIdx;
+    list.appendChild(card);
+  });
+}
+
+function renderMobileWeek(){
+  const days=[...Array(7)].map((_,i)=>addDays(currentWeekStart,i));
+  renderChips('mChipsWeek');
+  const filter=$('coachFilter').value;
+  const acc=$('mWeekAcc'); if(!acc) return;
+  acc.innerHTML='';
+  days.forEach((d,i)=>{
+    const slots=getSlotsForDate(d);
+    let dayUnc=0; slots.forEach(s=>{if(!s.coach)dayUnc++});
+    const filtered=filter?slots.filter(s=>s.coach===filter):slots;
+    const box=document.createElement('div');
+    box.className='acc-day';
+    const isT=isToday(d);
+    const oI=isT?' open':'';
+    box.innerHTML=`<div class="acc-head${isT?' today':''}${oI}"><div>${esc(DAYS[i])} <span style="color:var(--muted);font-size:.85rem;font-weight:500">${d.getDate()}/${d.getMonth()+1}</span></div><div style="display:flex;gap:.4rem;align-items:center"><span class="acc-badge${dayUnc>0?' hasunc':''}">${slots.length} lez${dayUnc>0?' · '+dayUnc+'⚠':''}</span><span class="acc-arrow">▼</span></div></div><div class="acc-body${oI}"><div class="acc-inner"></div></div>`;
+    const inner=box.querySelector('.acc-inner');
+    if(filtered.length===0) inner.innerHTML='<div style="color:var(--muted);text-align:center;padding:.7rem;font-size:.85rem">Nessuna lezione</div>';
+    else filtered.forEach(s=>{
+      const c=DATA.coaches.find(x=>x.name===s.coach);
+      const unc=!s.coach?' uncov':'';
+      const card=document.createElement('div');
+      card.className='slot-card'+unc;
+      if(c) card.style.borderLeftColor=c.color;
+      card.innerHTML=slotCardHTML(s,c);
+      card.dataset.action='editslot';card.dataset.date=s.dateStr;card.dataset.time=s.time;card.dataset.cls=s.cls;card.dataset.source=s.source;
+      if(s.extraIdx!=null) card.dataset.idx=s.extraIdx;
+      inner.appendChild(card);
+    });
+    const head=box.querySelector('.acc-head'),body=box.querySelector('.acc-body');
+    head.addEventListener('click',()=>{head.classList.toggle('open');body.classList.toggle('open')});
+    acc.appendChild(box);
+  });
+  // KPIs (same as week view)
+  let tot=0,cov=0,unc=0;
+  days.forEach(d=>getSlotsForDate(d).forEach(s=>{tot++;s.coach?cov++:unc++}));
+  $('kTot').textContent=tot;$('kCov').textContent=cov;$('kUnc').textContent=unc;
+  const wl=$('weekLabel'); if(wl) wl.textContent=`${fmtIT(days[0])} → ${fmtIT(days[6])}`;
+}
+
+function renderAll(){
+  const isMobile=window.innerWidth<=900;
+  const active=document.querySelector('.view.active');
+  if(!active) return;
+  if(active.id==='view-today') renderMobileToday();
+  else if(active.id==='view-week'){
+    if(isMobile) renderMobileWeek();
+    else renderWeek();
+  }
+}
+
+/* ============ CLICKS (delegation) ============ */
+function onClickSlot(ev){
+  const cell=ev.target.closest('[data-action]');
+  if(!cell) return;
+  const a=cell.dataset.action;
+  if(a==='newslot') openEditModal('new',{dateStr:cell.dataset.date,time:cell.dataset.time,cls:''});
+  else if(a==='editslot') openEditModal(cell.dataset.source,{dateStr:cell.dataset.date,time:cell.dataset.time,cls:cell.dataset.cls,extraIdx:cell.dataset.idx!=null?parseInt(cell.dataset.idx):null});
+}
+
+/* ============ EDIT MODAL ============ */
+function popSel(id,vals,sel,withEmpty){
+  const s=$(id); s.innerHTML=withEmpty?'<option value="">— Scoperto —</option>':'';
+  vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===sel)o.selected=true;s.appendChild(o)});
+}
+function openEditModal(mode,info){
+  editingSlot=Object.assign({mode},info);
+  $('eDate').value=info.dateStr;
+  $('eTime').value=info.time||'18:30';
+  popSel('eClass',DATA.classes,info.cls||DATA.classes[0]);
+  let curCoach='';
+  if(mode==='template') curCoach=DATA.assignments[slotKey(info.dateStr,info.time,info.cls)]||'';
+  else if(mode==='extra') curCoach=DATA.extraSlots[info.dateStr][info.extraIdx].coach||'';
+  popSel('eCoach',DATA.coaches.map(c=>c.name),curCoach,true);
+  $('eDel').style.display=(mode==='new')?'none':'inline-flex';
+  $('editModal').classList.add('show');
+}
+function closeEditModal(){$('editModal').classList.remove('show');editingSlot=null}
+function saveEdit(){
+  if(!editingSlot) return;
+  const time=$('eTime').value,cls=$('eClass').value,coach=$('eCoach').value;
+  if(!time||!cls){toast('Compila orario e classe',true);return}
+  const{mode,dateStr}=editingSlot;
+  if(mode==='new'){
+    if(!DATA.extraSlots[dateStr]) DATA.extraSlots[dateStr]=[];
+    DATA.extraSlots[dateStr].push({time,cls,coach});
+  } else if(mode==='template'){
+    const oldK=slotKey(dateStr,editingSlot.time,editingSlot.cls);
+    if(time!==editingSlot.time||cls!==editingSlot.cls){
+      DATA.deletedSlots[oldK]=true; delete DATA.assignments[oldK];
+      if(!DATA.extraSlots[dateStr]) DATA.extraSlots[dateStr]=[];
+      DATA.extraSlots[dateStr].push({time,cls,coach});
+    } else {
+      if(coach) DATA.assignments[oldK]=coach; else delete DATA.assignments[oldK];
+    }
+  } else {
+    DATA.extraSlots[dateStr][editingSlot.extraIdx]={time,cls,coach};
+  }
+  saveData(); closeEditModal(); renderAll(); toast('Salvato');
+}
+function delEdit(){
+  if(!editingSlot) return;
+  const{mode,dateStr,extraIdx}=editingSlot;
+  if(mode==='template'){
+    if(!confirm('Rimuovere solo per questa data?')) return;
+    const k=slotKey(dateStr,editingSlot.time,editingSlot.cls);
+    DATA.deletedSlots[k]=true; delete DATA.assignments[k];
+  } else if(mode==='extra'){
+    if(!confirm('Eliminare slot extra?')) return;
+    DATA.extraSlots[dateStr].splice(extraIdx,1);
+    if(DATA.extraSlots[dateStr].length===0) delete DATA.extraSlots[dateStr];
+  } else return;
+  saveData(); closeEditModal(); renderAll(); toast('Eliminato');
+}
+
+/* ============ ADD MODAL ============ */
+function openAddModal(){
+  const sel=$('aDay'); sel.innerHTML='';
+  const base=window.innerWidth<=900 && document.querySelector('#view-today.active') ? currentDay : currentWeekStart;
+  const start=mondayOf(base);
+  for(let i=0;i<7;i++){const d=addDays(start,i);const o=document.createElement('option');o.value=fmtDate(d);o.textContent=`${DAYS[i]} ${fmtIT(d)}`;if(isToday(d))o.selected=true;sel.appendChild(o)}
+  popSel('aClass',DATA.classes,'CrossFit');
+  popSel('aCoach',DATA.coaches.map(c=>c.name),'',true);
+  $('addModal').classList.add('show');
+}
+function closeAddModal(){$('addModal').classList.remove('show')}
+function saveAdd(){
+  const ds=$('aDay').value,time=$('aTime').value,cls=$('aClass').value,coach=$('aCoach').value;
+  if(!ds||!time||!cls){toast('Compila i campi',true);return}
+  if(!DATA.extraSlots[ds]) DATA.extraSlots[ds]=[];
+  DATA.extraSlots[ds].push({time,cls,coach});
+  saveData(); closeAddModal(); renderAll(); toast('Slot aggiunto');
+}
+
+/* ============ DASHBOARD ============ */
+function renderDashboard(){
+  const y=$('dashYear');
+  if(!y.options.length){const cy=new Date().getFullYear();for(let yr=cy-1;yr<=cy+2;yr++){const o=document.createElement('option');o.value=yr;o.textContent=yr;if(yr===cy)o.selected=true;y.appendChild(o)}}
+  const year=parseInt(y.value);
+  const counts={},unc=Array(12).fill(0);
+  DATA.coaches.forEach(c=>counts[c.name]=Array(12).fill(0));
+  for(let d=new Date(year,0,1),e=new Date(year,11,31);d<=e;d=addDays(d,1)){
+    const m=d.getMonth();
+    getSlotsForDate(d).forEach(s=>{if(s.coach&&counts[s.coach])counts[s.coach][m]++;else if(!s.coach)unc[m]++});
+  }
+  let h='<thead><tr><th>Coach</th>'+MONTHS.map(m=>`<th>${esc(m)}</th>`).join('')+'<th>TOT</th></tr></thead><tbody>';
+  DATA.coaches.forEach(c=>{h+=`<tr><td style="color:${esc(c.color)}">● ${esc(c.name)}</td>`;let t=0;counts[c.name].forEach(v=>{h+=`<td>${v||''}</td>`;t+=v});h+=`<td><strong>${t}</strong></td></tr>`});
+  h+='<tr class="tot"><td>TOTALE</td>';let g=0;for(let m=0;m<12;m++){let s=0;DATA.coaches.forEach(c=>s+=counts[c.name][m]);h+=`<td>${s||''}</td>`;g+=s}h+=`<td>${g}</td></tr>`;
+  h+='<tr class="unc"><td>⚠ Scoperte</td>';let tu=0;unc.forEach(v=>{h+=`<td>${v||''}</td>`;tu+=v});h+=`<td>${tu}</td></tr></tbody>`;
+  $('dashTable').innerHTML=h;
+}
+
+/* ============ ADMIN ============ */
+function renderAdmin(){
+  const cl=$('coachList');cl.innerHTML='';
+  DATA.coaches.forEach((c,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML=`<input type="color" value="${esc(c.color)}" data-cc="${i}"><input type="text" value="${esc(c.name)}" data-cn="${i}"><button class="btn btn-danger btn-sm" data-cd="${i}">✕</button>`;cl.appendChild(r)});
+  const ll=$('classList');ll.innerHTML='';
+  DATA.classes.forEach((c,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML=`<input type="text" value="${esc(c)}" data-ln="${i}"><button class="btn btn-danger btn-sm" data-ld="${i}">✕</button>`;ll.appendChild(r)});
+  renderTpl();
+  if($('gasUrl')){$('gasUrl').value=GAS.url||'';$('autoSync').checked=!!GAS.auto;updateLastSyncTxt();setSyncStatus('idle')}
+}
+function renderTpl(){
+  const tg=$('tplGrid');tg.innerHTML='';
+  for(let d=0;d<7;d++){
+    const col=document.createElement('div');col.className='tpl-day';
+    let h=`<h4>${esc(DAYS[d])}</h4>`;
+    (DATA.template[d]||[]).forEach((s,i)=>{h+=`<div class="tpl-s"><span>${esc(s.time)} · ${esc(s.cls)}</span><span class="x" data-tpldel="${d}_${i}">✕</span></div>`});
+    const opts=DATA.classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    h+=`<div class="tpl-add"><input type="time" id="tplT_${d}" value="18:30"><select id="tplC_${d}">${opts}</select><button class="btn btn-primary btn-sm" data-tpladd="${d}">+</button></div>`;
+    col.innerHTML=h; tg.appendChild(col);
+  }
+}
+function onAdminClick(ev){
+  const t=ev.target.closest('button, .x'); if(!t) return;
+  if(t.dataset.cd!=null){if(confirm('Rimuovere coach?')){DATA.coaches.splice(parseInt(t.dataset.cd),1);saveData();renderAdmin();renderAll()}}
+  else if(t.dataset.ld!=null){if(confirm('Rimuovere classe?')){DATA.classes.splice(parseInt(t.dataset.ld),1);saveData();renderAdmin()}}
+  else if(t.dataset.tpldel!=null){const[d,i]=t.dataset.tpldel.split('_').map(Number);if(confirm('Rimuovere dal template settimanale?')){DATA.template[d].splice(i,1);saveData();renderTpl();renderAll()}}
+  else if(t.dataset.tpladd!=null){const d=parseInt(t.dataset.tpladd);const time=$('tplT_'+d).value;const cls=$('tplC_'+d).value;if(!time||!cls){toast('Compila',true);return}if(!DATA.template[d])DATA.template[d]=[];DATA.template[d].push({time,cls});DATA.template[d].sort((a,b)=>a.time.localeCompare(b.time));saveData();renderTpl();renderAll();toast('Aggiunto')}
+}
+function onAdminChange(ev){
+  const t=ev.target;
+  if(t.dataset.cc!=null){DATA.coaches[parseInt(t.dataset.cc)].color=t.value;saveData();renderAll()}
+  else if(t.dataset.cn!=null){const i=parseInt(t.dataset.cn),old=DATA.coaches[i].name,nn=t.value.trim();if(!nn){t.value=old;return}DATA.coaches[i].name=nn;Object.keys(DATA.assignments).forEach(k=>{if(DATA.assignments[k]===old)DATA.assignments[k]=nn});Object.values(DATA.extraSlots).forEach(a=>a.forEach(e=>{if(e.coach===old)e.coach=nn}));saveData();renderAll();updateCoachFilter()}
+  else if(t.dataset.ln!=null){const i=parseInt(t.dataset.ln),nn=t.value.trim();if(!nn){t.value=DATA.classes[i];return}DATA.classes[i]=nn;saveData();renderTpl()}
+}
+
+function updateCoachFilter(){
+  const sel=$('coachFilter'),cur=sel.value;
+  sel.innerHTML='<option value="">Tutti i coach</option>';
+  DATA.coaches.forEach(c=>{const o=document.createElement('option');o.value=c.name;o.textContent=c.name;if(c.name===cur)o.selected=true;sel.appendChild(o)});
+}
+
+/* ============ EXPORT ============ */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`cfb-${fmtDate(new Date())}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Backup scaricato');
+}
+function importJSON(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(!d.coaches||!d.template)throw new Error('Formato non valido');if(!confirm('Sovrascrivere i dati?'))return;DATA=d;saveData();location.reload()}catch(err){toast('Errore: '+err.message,true)}};
+  r.readAsText(f);
+}
+function exportExcel(){
+  if(typeof XLSX==='undefined'){toast('Libreria Excel non caricata',true);return}
+  const year=parseInt($('dashYear').value||new Date().getFullYear());
+  const wb=XLSX.utils.book_new();
+  const counts={},unc=Array(12).fill(0);
+  DATA.coaches.forEach(c=>counts[c.name]=Array(12).fill(0));
+  const det=[['Data','Giorno','Orario','Classe','Coach']];
+  for(let d=new Date(year,0,1),e=new Date(year,11,31);d<=e;d=addDays(d,1)){
+    const m=d.getMonth();
+    getSlotsForDate(d).forEach(s=>{if(s.coach&&counts[s.coach])counts[s.coach][m]++;else if(!s.coach)unc[m]++;det.push([fmtIT(d),DAYS_S[(d.getDay()+6)%7],s.time,s.cls,s.coach||'SCOPERTO'])});
+  }
+  const head=['Coach',...MONTHS_F.map(m=>m+' '+year),'Totale'];
+  const rows=[head];
+  DATA.coaches.forEach(c=>{const r=[c.name];let t=0;counts[c.name].forEach(v=>{r.push(v);t+=v});r.push(t);rows.push(r)});
+  const tr=['TOTALE'];let g=0;for(let m=0;m<12;m++){let s=0;DATA.coaches.forEach(c=>s+=counts[c.name][m]);tr.push(s);g+=s}tr.push(g);rows.push(tr);
+  rows.push(['SCOPERTE',...unc,unc.reduce((a,b)=>a+b,0)]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Conteggio');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(det),'Dettaglio');
+  XLSX.writeFile(wb,`CFB-${year}.xlsx`);
+  toast('Excel esportato');
+}
+
+/* ============ TOAST ============ */
+let toastTimer;
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className='toast show'+(err?' err':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ============ SWIPE ============ */
+function attachSwipe(el,onL,onR){
+  if(!el) return;
+  let sx=0,sy=0,st=0;
+  el.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now()},{passive:true});
+  el.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy,dt=Date.now()-st;if(Math.abs(dx)>60&&Math.abs(dy)<80&&dt<600){if(dx<0)onL();else onR()}},{passive:true});
+}
+
+/* ============ INIT ============ */
+function init(){
+  DATA=loadData();
+  currentWeekStart=mondayOf(new Date());
+  currentDay=new Date();
+  if(!STORAGE_OK) showSandboxBanner();
+  $('closeBanner').addEventListener('click',()=>$('sandboxBanner').style.display='none');
+
+  // Nav
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+  document.querySelectorAll('.bnav').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.mview)));
+  $('btnPrint').addEventListener('click',()=>window.print());
+
+  // Week toolbar
+  $('btnPrev').addEventListener('click',()=>navWeek(-1));
+  $('btnNext').addEventListener('click',()=>navWeek(1));
+  $('btnToday').addEventListener('click',goToday);
+  $('datePicker').addEventListener('change',e=>jumpDate(e.target.value));
+  $('coachFilter').addEventListener('change',renderAll);
+  $('btnAddExtra').addEventListener('click',openAddModal);
+  $('btnFab').addEventListener('click',openAddModal);
+
+  // Mobile day nav
+  $('mDayPrev').addEventListener('click',()=>{currentDay=addDays(currentDay,-1);renderMobileToday()});
+  $('mDayNext').addEventListener('click',()=>{currentDay=addDays(currentDay,1);renderMobileToday()});
+  attachSwipe($('view-today'),()=>{currentDay=addDays(currentDay,1);renderMobileToday()},()=>{currentDay=addDays(currentDay,-1);renderMobileToday()});
+  attachSwipe($('view-week'),()=>{if(window.innerWidth<=900){currentWeekStart=addDays(currentWeekStart,7);renderAll()}},()=>{if(window.innerWidth<=900){currentWeekStart=addDays(currentWeekStart,-7);renderAll()}});
+
+  // Slot clicks
+  document.addEventListener('click',onClickSlot);
+
+  // Modals
+  $('eSave').addEventListener('click',saveEdit);
+  $('eCancel').addEventListener('click',closeEditModal);
+  $('eDel').addEventListener('click',delEdit);
+  $('editModal').addEventListener('click',e=>{if(e.target.id==='editModal') closeEditModal()});
+  $('aSave').addEventListener('click',saveAdd);
+  $('aCancel').addEventListener('click',closeAddModal);
+  $('addModal').addEventListener('click',e=>{if(e.target.id==='addModal') closeAddModal()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEditModal();closeAddModal()}});
+
+  // Dashboard
+  $('dashYear').addEventListener('change',renderDashboard);
+  $('btnExportXlsx').addEventListener('click',exportExcel);
+  $('btnExportJson').addEventListener('click',exportJSON);
+  $('btnImportTrigger').addEventListener('click',()=>$('importFile').click());
+  $('importFile').addEventListener('change',importJSON);
+
+  // Admin
+  $('btnAddCoach').addEventListener('click',()=>{const n=prompt('Nome:');if(!n)return;if(DATA.coaches.find(c=>c.name===n.trim())){alert('Esistente');return}const cs=['#e63946','#06d6a0','#118ab2','#f4a261','#9b5de5','#ffd60a','#ff006e'];DATA.coaches.push({name:n.trim(),color:cs[DATA.coaches.length%cs.length]});saveData();renderAdmin();renderAll();updateCoachFilter()});
+  $('btnAddClass').addEventListener('click',()=>{const n=prompt('Nome:');if(!n)return;if(DATA.classes.includes(n.trim())){alert('Esistente');return}DATA.classes.push(n.trim());saveData();renderAdmin()});
+  $('coachList').addEventListener('click',onAdminClick);
+  $('coachList').addEventListener('change',onAdminChange);
+  $('classList').addEventListener('click',onAdminClick);
+  $('classList').addEventListener('change',onAdminChange);
+  $('tplGrid').addEventListener('click',onAdminClick);
+
+  // Sync
+  $('btnPull').addEventListener('click',()=>pullFromGoogle(false));
+  $('btnPush').addEventListener('click',()=>pushToGoogle(false));
+  $('btnTestSync').addEventListener('click',testConnection);
+  $('btnSaveSyncCfg').addEventListener('click',saveSyncCfg);
+  $('togInstr').addEventListener('click',()=>{const el=$('syncInstr');el.style.display=el.style.display==='none'?'block':'none'});
+  $('btnCopyCode').addEventListener('click',()=>{const c=$('gasCode').textContent;navigator.clipboard.writeText(c).then(()=>toast('Codice copiato')).catch(()=>toast('Copia manuale',true))});
+
+  $('btnReset').addEventListener('click',()=>{if(confirm('Cancellare TUTTI i dati?')){try{localStorage.removeItem('cfb_data')}catch(e){}MEMORY_STORE=null;location.reload()}});
+
+  // Initial view: mobile → today, desktop → week
+  if(window.innerWidth<=900){setView('today')} else {setView('week')}
+
+  updateCoachFilter();
+  setSyncStatus('idle');
+  updateLastSyncTxt();
+
+  // Resize
+  let rt;
+  window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(renderAll,150)});
+
+  // Auto-pull on start
+  if(GAS.url && GAS.auto){setTimeout(()=>pullFromGoogle(true),500)}
+}
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+else init();
+</script>
+</body>
+</html>
