@@ -1357,7 +1357,7 @@ function attachSwipe(el,onL,onR){
   },{passive:true});
 }
 
-const DEFAULT_SYNC_URL='https://script.google.com/macros/s/AKfycbwfUzLYuOFYyUCrwWkbSPX1u9ggF8m1FUUvZL9cZdmTHHgg7oSgOHpIuFW-cvTGAXIHgQ/exec';
+const DEFAULT_SYNC_URL='https://script.google.com/macros/s/AKfycbyDOanzbPOU2qJj0FRmIQGbd6IUU4HS6c12HhgjNdbO5bSk_uMQYjXt0JsV_C0--KJ4GA/exec';
 let SYNC_URL=DEFAULT_SYNC_URL;
 try{SYNC_URL=localStorage.getItem('cfb_sync_url')||DEFAULT_SYNC_URL}catch(e){}
 let autoSync=true,pushTimer=null,pullTimer=null,retryTimer=null,syncing=false,syncAgain=false,retryDelay=0;
